@@ -79,6 +79,16 @@
                         <li><a class="dropdown-item" href="reservations.jsp">Manage Reservations</a></li>
                     </ul>
                 </li>
+
+                <!-- Operator Dropdown -->
+                <li class="nav-item dropdown" id="supportNav">
+                    <a class="nav-link dropdown-toggle" href="#" id="supportDropdown" role="button" data-bs-toggle="dropdown">
+                        User Support
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="guide.jsp">Guide</a></li>
+                    </ul>
+                </li>
             </ul>
 
             <span id="alertBox"></span> <!-- Alerts appear here -->

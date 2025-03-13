@@ -128,4 +128,11 @@ public class UserController {
         }
     }
 
+    @GET
+    @Path("/role/drivers")
+    @Produces(MediaType.APPLICATION_JSON)
+    public String getDrivers() {
+        return gson.toJson(userService.getUsersByRole("DRIVER"));
+    }
+
 }

@@ -10,77 +10,149 @@
 
     <script>
         const url = "http://localhost:8080/api/vehicle";
+        const driverUrl = "http://localhost:8080/api/user/role/drivers";
 
         document.addEventListener("DOMContentLoaded", function () {
             const user = JSON.parse(sessionStorage.getItem("user"));
             if (!user || user.role !== "ADMIN") {
-                showToast("danger", "Access denied. Only admins can manage vehicles.");
-                setTimeout(() => window.location.href = "dashboard.jsp", 3000);
+                alert("Access denied. Only admins can manage vehicles.");
+                window.location.href = "dashboard.jsp";
                 return;
             }
             loadVehicles();
+            loadDrivers();
         });
 
         function loadVehicles() {
             fetch(url)
                 .then(res => res.json())
                 .then(data => {
-                    console.log("Vehicle Data Received:", data);
                     let vehicleTable = document.getElementById("vehicleTable");
-                    vehicleTable.innerHTML = "";
+                    vehicleTable.innerHTML = ""; // Clear existing content
 
                     data.forEach(vehicle => {
                         let row = document.createElement("tr");
 
-                        // Model Column
+                        // ✅ Model Column
                         let modelCell = document.createElement("td");
                         modelCell.textContent = vehicle.model || "N/A";
                         row.appendChild(modelCell);
 
-                        // Number Plate Column
+                        // ✅ Number Plate Column
                         let plateCell = document.createElement("td");
                         plateCell.textContent = vehicle.numberPlate || "N/A";
                         row.appendChild(plateCell);
 
-                        // Status Column
+                        // ✅ Status Column with Dropdown
                         let statusCell = document.createElement("td");
-                        statusCell.textContent = vehicle.status;
+                        let statusSelect = document.createElement("select");
+                        statusSelect.className = "form-select form-select-sm";
+                        statusSelect.setAttribute("data-assigned-driver", vehicle.assignedDriverId || "");
+
+                        const statuses = [
+                            { value: "NOT_AVAILABLE", label: "NOT_AVAILABLE" },
+                            { value: "AVAILABLE", label: "AVAILABLE", disabled: !vehicle.assignedDriverId }, // Disable if no driver assigned
+                            { value: "MAINTENANCE", label: "MAINTENANCE" }
+                        ];
+
+                        statuses.forEach(status => {
+                            let option = document.createElement("option");
+                            option.value = status.value;
+                            option.textContent = status.label;
+
+                            if (vehicle.status === status.value) {
+                                option.selected = true;
+                            }
+
+                            if (status.disabled) {
+                                option.disabled = true;
+                            }
+
+                            statusSelect.appendChild(option);
+                        });
+
+                        statusSelect.onchange = function () {
+                            updateVehicleStatus(vehicle.id, statusSelect.value);
+                        };
+
+                        statusCell.appendChild(statusSelect);
                         row.appendChild(statusCell);
 
-                        // Actions Column
-                        let actionCell = document.createElement("td");
+                        // ✅ Assign Driver Column with Dropdown
+                        let driverCell = document.createElement("td");
+                        let driverSelect = document.createElement("select");
+                        driverSelect.className = "form-select form-select-sm driver-select";
+                        driverSelect.id = "driver-select-" + vehicle.id;
+                        driverSelect.setAttribute("data-assigned-driver", vehicle.assignedDriverId || "");
+                        driverSelect.innerHTML = `<option value="">Assign Driver</option>`;
 
-                        // Status Toggle Button
-                        let toggleButton = document.createElement("button");
-                        let buttonClass = vehicle.status === "AVAILABLE" ? "btn-warning" : "btn-success";
-                        toggleButton.className = `btn ${buttonClass} btn-sm`;
-                        toggleButton.textContent = vehicle.status === "AVAILABLE" ? "Mark as Booked" : "Mark as Available";
-                        toggleButton.onclick = function () {
-                            toggleVehicleStatus(vehicle.id, vehicle.status);
+                        driverSelect.onchange = function () {
+                            assignDriver(vehicle.id, driverSelect.value);
                         };
-                        actionCell.appendChild(toggleButton);
 
-                        // Delete Button
+                        driverCell.appendChild(driverSelect);
+                        row.appendChild(driverCell);
+
+                        // ✅ Actions Column (Delete Button)
+                        let actionCell = document.createElement("td");
                         let deleteButton = document.createElement("button");
-                        deleteButton.className = "btn btn-danger btn-sm ms-2";
+                        deleteButton.className = "btn btn-danger btn-sm";
                         deleteButton.textContent = "Delete";
                         deleteButton.onclick = function () {
                             deleteVehicle(vehicle.id);
                         };
                         actionCell.appendChild(deleteButton);
-
                         row.appendChild(actionCell);
+
                         vehicleTable.appendChild(row);
                     });
+
+                    // ✅ Load Drivers AFTER Vehicles are Loaded
+                    loadDrivers();
                 })
                 .catch(error => console.error("Error loading vehicles:", error));
+        }
+
+
+        function loadDrivers() {
+            fetch(driverUrl)
+                .then(res => res.json())
+                .then(data => {
+                    console.log("Drivers Data Received:", data); // Debugging
+
+                    if (!data.length) {
+                        console.warn("No drivers found!");
+                        return;
+                    }
+
+                    document.querySelectorAll(".driver-select").forEach(select => {
+                        let assignedDriverId = select.getAttribute("data-assigned-driver") || ""; // Fetch assigned driver ID
+                        select.innerHTML = `<option value="">Assign Driver</option>`; // Reset options
+                        console.log(assignedDriverId)
+                        data.forEach(driver => {
+                            console.log("Driver:", driver); // Debugging
+                            if (driver.name) {  // Ensure driver has a valid name
+                                let option = document.createElement("option");
+                                option.value = driver.id;
+                                option.textContent = driver.name;
+
+                                if (driver.id == assignedDriverId) {
+                                    option.selected = true;
+                                }
+
+                                select.appendChild(option);
+                            }
+                        });
+                    });
+                })
+                .catch(error => console.error("Error loading drivers:", error));
         }
 
         function addVehicle() {
             const vehicle = {
                 "model": document.getElementById("txtModel").value,
                 "numberPlate": document.getElementById("txtNumberPlate").value,
-                "status": "AVAILABLE"
+                "status": "NOT_AVAILABLE"
             };
 
             fetch(url, {
@@ -95,12 +167,23 @@
             }).catch(() => showToast("danger", "Failed to add vehicle!"));
         }
 
-        function toggleVehicleStatus(vehicleId, currentStatus) {
-            const newStatus = currentStatus === "AVAILABLE" ? "BOOKED" : "AVAILABLE";
+        function assignDriver(vehicleId, driverId) {
+            if (!driverId) return;
+            fetch(url + "/assignDriver", {
+                method: "PUT",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ id: vehicleId, assignedDriverId: driverId })
+            }).then(() => {
+                showToast("success", "Driver assigned successfully!");
+                loadVehicles();
+            }).catch(() => showToast("danger", "Failed to assign driver!"));
+        }
+
+        function updateVehicleStatus(vehicleId, status) {
             fetch(url + "/updateStatus", {
                 method: "PUT",
                 headers: { "content-type": "application/json" },
-                body: JSON.stringify({ id: vehicleId, status: newStatus })
+                body: JSON.stringify({ id: vehicleId, status: status })
             }).then(() => {
                 showToast("success", "Vehicle status updated successfully!");
                 loadVehicles();
@@ -181,21 +264,12 @@
                 <th>Model</th>
                 <th>Number Plate</th>
                 <th>Status</th>
+                <th>Assign Driver</th>
                 <th>Actions</th>
             </tr>
             </thead>
             <tbody id="vehicleTable"></tbody>
         </table>
-    </div>
-</div>
-
-<!-- Bootstrap Toast Notification -->
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
-    <div id="liveToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="d-flex">
-            <div class="toast-body" id="toastMessage">Success message</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
     </div>
 </div>
 

@@ -101,4 +101,19 @@ public class VehicleService {
         }
         return false;
     }
+
+    public boolean assignDriver(int vehicleId, int driverId) {
+        try {
+            Connection connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+            Statement statement = connection.createStatement();
+
+            // Update the vehicle with the assigned driver
+            int rows = statement.executeUpdate("UPDATE vehicle SET ASSIGNEDDRIVERID = " + driverId + ", status = 'AVAILABLE' WHERE id = " + vehicleId);
+
+            return rows > 0;
+        } catch (SQLException e) {
+            System.out.println("Error assigning driver: " + e.getMessage());
+        }
+        return false;
+    }
 }

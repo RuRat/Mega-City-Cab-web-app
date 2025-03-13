@@ -176,4 +176,29 @@ public class UserService {
         return false;
     }
 
+    public List<User> getUsersByRole(String role) {
+        List<User> users = new ArrayList<>();
+        try (Connection connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+             PreparedStatement statement = connection.prepareStatement("SELECT id, username, name FROM auth_user WHERE role = ?")) {
+            statement.setString(1, role);
+            ResultSet rs = statement.executeQuery();
+            while (rs.next()) {
+                users.add(new User(
+                        rs.getInt("id"),
+                        rs.getString("username"),
+                        null, // Avoid exposing password
+                        role,
+                        null, // Exclude status
+                        rs.getString("name"),
+                        null, // Exclude address
+                        null, // Exclude phone
+                        null, // Exclude license_number
+                        0 // Exclude vehicle_id
+                ));
+            }
+        } catch (SQLException e) {
+            System.out.println(e);
+        }
+        return users;
+    }
 }

@@ -58,6 +58,7 @@
                 "status": "PENDING"
             };
 
+
             if (!reservation.vehicleId || !reservation.pickupLocation || !reservation.destinationLocation || !reservation.startTime) {
                 showToast("danger", "All fields are required!");
                 return;

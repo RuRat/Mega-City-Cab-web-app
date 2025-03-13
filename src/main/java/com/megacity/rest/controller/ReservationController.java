@@ -2,6 +2,7 @@ package com.megacity.rest.controller;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonPrimitive;
 import com.megacity.rest.entity.Reservation;
 import com.megacity.rest.entity.Vehicle;
 import com.megacity.rest.service.ReservationService;
@@ -17,18 +18,30 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Path("reservation")
 public class ReservationController {
     private final ReservationService reservationService = new ReservationService();
-    private final Gson gson = new GsonBuilder().create();
+    private final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(LocalDateTime.class, (com.google.gson.JsonDeserializer<LocalDateTime>)
+                    (json, type, jsonDeserializationContext) ->
+                            LocalDateTime.parse(json.getAsJsonPrimitive().getAsString(),
+                                    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX")))
+            .create();
 
+    private final Gson gsonDto = new GsonBuilder()
+            .registerTypeAdapter(LocalDateTime.class, (com.google.gson.JsonSerializer<LocalDateTime>)
+                    (localDateTime, type, context) ->
+                            new JsonPrimitive(localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))))
+            .create();
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public String getReservations() {
         List<Reservation> reservations = reservationService.getReservations();
-        return gson.toJson(reservations);
+        return gsonDto.toJson(reservations);
     }
 
     @GET

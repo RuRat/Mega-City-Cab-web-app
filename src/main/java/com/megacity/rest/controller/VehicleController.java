@@ -81,4 +81,19 @@ public class VehicleController {
             return Response.status(500).entity("Error deleting vehicle").build();
         }
     }
+
+    @PUT
+    @Path("/assignDriver")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response assignDriver(String json) {
+        Vehicle vehicle = gson.fromJson(json, Vehicle.class);
+        boolean result = vehicleService.assignDriver(vehicle.getId(), vehicle.getAssignedDriverId());
+
+        if (result) {
+            return Response.status(200).entity("{\"message\": \"Driver assigned successfully.\"}").build();
+        } else {
+            return Response.status(500).entity("{\"message\": \"Failed to assign driver.\"}").build();
+        }
+    }
 }

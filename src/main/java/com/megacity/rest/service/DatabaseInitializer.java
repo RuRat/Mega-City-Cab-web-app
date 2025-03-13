@@ -8,7 +8,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class DatabaseInitializer {
-    private static final String URL = "jdbc:mysql://localhost:3306/test_db"; // SQLite database file path
+    private static final String URL = "jdbc:mysql://localhost:3306/test_db"; 
+                                                // SQLite database file path
     private static final String USERNAME = "root";
     private static final String PASSWORD = "z123";
 

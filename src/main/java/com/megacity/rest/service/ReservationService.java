@@ -19,6 +19,9 @@ public class ReservationService {
     private static final String USERNAME = "root";
     private static final String PASSWORD = "z123";
     
+    
+    
+    
     public List<Reservation> getReservations() {
         List<Reservation> reservations = new ArrayList<>();
         try {

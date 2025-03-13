@@ -83,18 +83,26 @@ CREATE TABLE vehicle (
 
 -- Create reservation table
 CREATE TABLE reservation (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    customerId INT NOT NULL,
-    vehicleId INT NOT NULL,
-    driverId INT NOT NULL,
-    startTime TIMESTAMP,
-    endTime TIMESTAMP,
-    pickupLocation TEXT,
-    destinationLocation TEXT,
-    status ENUM('PENDING', 'CONFIRMED', 'CANCELLED'),
-    FOREIGN KEY (customerId) REFERENCES auth_user(id),
-    FOREIGN KEY (vehicleId) REFERENCES vehicle(id),
-    FOREIGN KEY (driverId) REFERENCES auth_user(id)
+    id INT AUTO_INCREMENT PRIMARY KEY, 
+    customerId INT NOT NULL,  
+    vehicleId INT NOT NULL,   
+    driverId INT NOT NULL,  
+    startTime DATETIME,  
+    endTime DATETIME,  
+    pickupLocation VARCHAR(255), 
+    destinationLocation VARCHAR(255), 
+    status ENUM('PENDING', 'CONFIRMED', 'CANCELLED') DEFAULT 'PENDING',
+    -- Foreign keys referencing auth_user (for customer and driver) and vehicle
+    FOREIGN KEY (customerId) REFERENCES auth_user(id) ON DELETE CASCADE ON UPDATE CASCADE,  
+    FOREIGN KEY (vehicleId) REFERENCES vehicle(id) ON DELETE CASCADE ON UPDATE CASCADE,  
+    FOREIGN KEY (driverId) REFERENCES auth_user(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- Indexing foreign keys for faster querying
+CREATE INDEX idx_customer_id ON reservation(customerId);
+CREATE INDEX idx_vehicle_id ON reservation(vehicleId);
+CREATE INDEX idx_driver_id ON reservation(driverId);
+
 );
 
 -- Create invoice table
